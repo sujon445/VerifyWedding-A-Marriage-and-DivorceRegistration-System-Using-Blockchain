@@ -1,0 +1,327 @@
+pragma solidity ^0.5.8;
+
+contract mycontract
+{
+    
+    struct Marry_DivorceInfo
+    {
+        string Type;  
+        string PartnarName;
+        uint Day;
+        uint Month;
+        uint Year;
+        bool flag;
+    }
+    struct Person
+    {
+        string FirstName;
+        string LastName;
+        string FatherName;
+        string MotherName;
+        string Religion;
+        string PresentAddress;
+        string PermanentAddress;
+        uint BirthDay;
+        uint BirthMonth;
+        uint BirthYear;
+        string PrivateKey;
+        uint cnt;
+        mapping(uint=>Marry_DivorceInfo) MarryInfo;
+    }
+    mapping(address => Person) MarryPerson;
+    mapping(uint=>address) Punishment;
+    
+    uint PunishmentCnt=0;
+    uint TotalMarry=0;
+    uint TotalDivorce=0;
+    
+    address Admin;
+    constructor() public
+    {
+        Admin=msg.sender;
+    }
+
+    modifier OnlyAdmin
+    {
+        require(msg.sender==Admin);
+        _;
+    }
+    
+    function Set_marryPerson(
+        string memory _FirstName,
+        string memory _LastName,
+        string memory _FatherName,
+        string memory _MotherName,
+        string memory _Religion,
+        string memory _PresentAddress,
+        string memory _PermanentAddress,
+        uint _BirthDay,
+        uint _BirthMonth,
+        uint _BirthYear,
+        string memory _PrivateKey,
+        address Person_address
+        )OnlyAdmin public{
+            MarryPerson[Person_address].FirstName=_FirstName;
+            MarryPerson[Person_address].LastName=_LastName;
+            MarryPerson[Person_address].FatherName=_FatherName;
+            MarryPerson[Person_address].MotherName=_MotherName;
+            MarryPerson[Person_address].Religion=_Religion;
+            MarryPerson[Person_address].PresentAddress=_PresentAddress;
+            MarryPerson[Person_address].PermanentAddress=_PermanentAddress;
+            MarryPerson[Person_address].BirthDay=_BirthDay;
+            MarryPerson[Person_address].BirthMonth=_BirthMonth;
+            MarryPerson[Person_address].BirthYear=_BirthYear;
+            MarryPerson[Person_address].PrivateKey=_PrivateKey;
+            MarryPerson[Person_address].cnt=0;
+        }
+        
+        function marry(
+            string memory _GroomName, 
+            string memory _BrideName,
+            uint _MarryDay,
+            uint _MarryMonth,
+            uint _MarryYear,
+            bool Groomflag,
+            bool Brideflag,
+            address GroomAddress,
+            address BrideAddress
+            ) OnlyAdmin public{
+                
+                bool check=true;
+                uint a=MarryPerson[GroomAddress].cnt;
+                uint b=MarryPerson[BrideAddress].cnt;
+                for(uint i=1; i<=a; i++){
+                    if(keccak256(bytes(MarryPerson[GroomAddress].MarryInfo[i].Type))==keccak256(bytes("Marry"))){
+                        if(MarryPerson[GroomAddress].MarryInfo[i].flag==false) {
+                            Punishment[PunishmentCnt++]=GroomAddress;
+                            check=false;
+                        }
+                    }
+                }
+                for(uint i=1; i<=b; i++) {
+                    if(keccak256(bytes(MarryPerson[BrideAddress].MarryInfo[i].Type))
+                    == keccak256(bytes("Marry"))){
+                        if(MarryPerson[BrideAddress].MarryInfo[i].flag==false) {
+                            Punishment[PunishmentCnt++]=BrideAddress;
+                            check=false;
+                        }
+                    }
+                }
+                
+               if(check && _MarryYear-MarryPerson[GroomAddress].BirthYear<21){
+                   Punishment[PunishmentCnt++]=GroomAddress;
+                   check=false;
+               }
+               else if(check && _MarryYear-MarryPerson[GroomAddress].BirthYear==21){
+                   if(_MarryMonth<MarryPerson[GroomAddress].BirthMonth){
+                       Punishment[PunishmentCnt++]=GroomAddress;
+                       check=false;
+                   }
+                   else if(_MarryMonth==MarryPerson[GroomAddress].BirthMonth&&MarryPerson[GroomAddress].BirthDay>_MarryDay){
+                       Punishment[PunishmentCnt++]=GroomAddress;
+                       check=false;
+                   }
+               }
+               if(check && _MarryYear-MarryPerson[BrideAddress].BirthYear<18){
+                   Punishment[PunishmentCnt++]=BrideAddress;
+                   check=false;
+               }
+               else if(check && _MarryYear-MarryPerson[BrideAddress].BirthYear==18){
+                   if(_MarryMonth<MarryPerson[BrideAddress].BirthMonth){
+                       Punishment[PunishmentCnt++]=BrideAddress;
+                       check=false;
+                   }
+                   else if(_MarryMonth==MarryPerson[BrideAddress].BirthMonth&&MarryPerson[BrideAddress].BirthDay>_MarryDay){
+                       Punishment[PunishmentCnt++]=BrideAddress;
+                       check=false;
+                   }
+               }
+                if(check==true){
+                    
+                    MarryPerson[GroomAddress].cnt++;
+                    MarryPerson[BrideAddress].cnt++;
+                    
+                    uint cnt1=MarryPerson[GroomAddress].cnt;
+                    uint cnt2=MarryPerson[BrideAddress].cnt;
+                    
+                    
+                
+                   if(cnt1==1) TotalMarry++;
+                   else {
+                      uint M=0;
+                      uint D=0;
+                      for(uint i=1; i<cnt1; i++){
+                         if(keccak256(bytes(MarryPerson[GroomAddress].MarryInfo[i].Type)) == keccak256(bytes("Marry"))){
+                              M++;
+                          }
+                          else D++;
+                      }
+                    
+                      if(M==D){
+                          TotalMarry++;
+                          TotalDivorce--;
+                      }
+                    }
+                
+                    if(cnt2==1) TotalMarry++;
+                    else{
+                       uint M=0;
+                       uint D=0;
+                       for(uint i=1; i<cnt2; i++){
+                        
+                           if(keccak256(bytes(MarryPerson[BrideAddress].MarryInfo[i].Type)) == keccak256(bytes("Marry"))){
+                               M++;
+                            }
+                            else D++;
+                        }
+                        if(M==D) {
+                            TotalMarry++;
+                            TotalDivorce--;
+                        }
+                    }
+                
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].Type="Marry";
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].PartnarName=_BrideName;
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].Day=_MarryDay;
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].Month=_MarryMonth;
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].Year=_MarryYear;
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].Type="Marry";
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].PartnarName=_GroomName;
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].Day=_MarryDay;
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].Month=_MarryMonth;
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].Year=_MarryYear;
+                    MarryPerson[GroomAddress].MarryInfo[cnt1].flag=Brideflag;
+                    MarryPerson[BrideAddress].MarryInfo[cnt2].flag=Groomflag;
+                }
+                
+            }
+            
+            function Divorce(
+            string memory _GroomName, 
+            string memory _BrideName,
+            uint DivorceDay,
+            uint DivorceMonth,
+            uint DivorceYear,
+            address GroomAddress,
+            address BrideAddress
+            ) OnlyAdmin public{
+                
+                MarryPerson[GroomAddress].cnt++;
+                MarryPerson[BrideAddress].cnt++;
+                
+                uint cnt1=MarryPerson[GroomAddress].cnt;
+                uint cnt2=MarryPerson[BrideAddress].cnt;
+                
+                uint M=0;
+                uint D=1;
+                for(uint i=1; i<cnt1; i++)
+                {
+                    if(keccak256(bytes(MarryPerson[GroomAddress].MarryInfo[i].Type)) == keccak256(bytes("Marry")))
+                    {
+                        M++;
+                    }
+                    else D++;
+                }
+                    
+                if(M==D)
+                {
+                    TotalMarry--;
+                    TotalDivorce++;
+                }
+                
+                M=0;
+                D=1;
+                for(uint i=1; i<cnt2; i++)
+                {
+                    if(keccak256(bytes(MarryPerson[BrideAddress].MarryInfo[i].Type)) == keccak256(bytes("Marry")))
+                    {
+                        M++;
+                    }
+                    else D++;
+                }
+                    
+                if(M==D)
+                {
+                    TotalMarry--;
+                    TotalDivorce++;
+                }
+                
+                MarryPerson[GroomAddress].MarryInfo[cnt1].Type="Divorce";
+                MarryPerson[GroomAddress].MarryInfo[cnt1].PartnarName=_BrideName;
+                MarryPerson[GroomAddress].MarryInfo[cnt1].Day=DivorceDay;
+                MarryPerson[GroomAddress].MarryInfo[cnt1].Month=DivorceMonth;
+                MarryPerson[GroomAddress].MarryInfo[cnt1].Year=DivorceYear;
+            
+                MarryPerson[BrideAddress].MarryInfo[cnt2].Type="Divorce";
+                MarryPerson[BrideAddress].MarryInfo[cnt2].PartnarName=_GroomName;
+                MarryPerson[BrideAddress].MarryInfo[cnt2].Day=DivorceDay;
+                MarryPerson[BrideAddress].MarryInfo[cnt2].Month=DivorceMonth;
+                MarryPerson[BrideAddress].MarryInfo[cnt2].Year=DivorceYear;
+            }
+            
+            function Get1_marryPerson(
+                address _address
+                )OnlyAdmin view public returns(
+                string memory,
+                string memory,
+                string memory,
+                string memory,
+                string memory,
+                string memory,
+                string memory
+                ){
+                   return(MarryPerson[_address].FirstName,
+                   MarryPerson[_address].LastName,
+                   MarryPerson[_address].FatherName,
+                   MarryPerson[_address].MotherName,
+                   MarryPerson[_address].Religion,
+                   MarryPerson[_address].PresentAddress,
+                   MarryPerson[_address].PermanentAddress
+                
+                  );
+            }
+            
+            
+             function Get2_marryPerson(
+                address address1,
+                uint cnt
+                )OnlyAdmin view public returns(
+                string memory,
+                string memory,
+                uint,
+                uint,
+                uint
+                ){
+                   return(MarryPerson[address1].MarryInfo[cnt].Type,
+                    MarryPerson[address1].MarryInfo[cnt].PartnarName,
+                    MarryPerson[address1].MarryInfo[cnt].Day,
+                    MarryPerson[address1].MarryInfo[cnt].Month,
+                    MarryPerson[address1].MarryInfo[cnt].Year
+                   
+                
+                
+                  );
+            }
+            
+        function PersentageOFMarry(
+             uint TotalPerson)OnlyAdmin view public returns(
+                 uint ){
+                     return((TotalMarry*100)/TotalPerson);
+                 }
+        function  PersentageOFDivorce(
+             uint TotalPerson)OnlyAdmin view public returns(
+                 uint ){
+                     return((TotalDivorce*100)/TotalPerson);
+                 }
+        
+        function PersentageOFUnMarriedPerson(
+             uint TotalPerson)OnlyAdmin view public returns(
+                 uint ){
+                     return(((TotalPerson-TotalMarry-TotalDivorce)*100)/TotalPerson);
+                 }
+                 
+ 
+            
+        
+    
+}
